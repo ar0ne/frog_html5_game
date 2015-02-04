@@ -16,13 +16,13 @@
 
         var self = this;
 
-        this.block_height = this.gameSize.height / 15;
+        this.block_height = this.gameSize.height / 15;   // 32px
 
         this.bodies = [];
 
         this.bodies = this.bodies.concat(new Player(this));
 
-        this.bodies = this.bodies.concat(createWalls(this, 6, 3))
+        this.bodies = this.bodies.concat(load_level( this, LEVELS.level_1 ));
 
         var tick = function () {
             self.update();
@@ -31,11 +31,22 @@
         };
 
         tick();
+
     };
 
     Game.prototype = {
 
         update: function() {
+
+            for(var i = 0; i < this.bodies.length - 1; i++) {
+                for(var j= i+1; j < this.bodies.length; j++ ) {
+                    if (( this.bodies[i] instanceof Player || this.bodies[j] instanceof Player ) && this.isCollided(this.bodies[i], this.bodies[j])) {
+                        this.bodies.splice(j, 1);
+                        this.bodies.splice(i, 1);
+                    }
+                }
+            }
+
 
             for(var i = 0; i < this.bodies.length; i++ ) {
                 this.bodies[i].update();
@@ -52,6 +63,16 @@
 
         addBody: function (body) {
             this.bodies.push(body);
+        },
+
+        isCollided: function (b1, b2) {
+            return !(
+                b1 === b2 ||
+                b1.position.x + b1.size.width  <= b2.position.x  ||
+                b1.position.y + b1.size.height <= b2.position.y  ||
+                b1.position.x  >= b2.position.x + b2.size.width  ||
+                b1.position.y  >= b2.position.y + b2.size.height
+            );
         },
 
     };
@@ -110,13 +131,14 @@
 
             this.timer++;
 
-            if(this.timer % 12 == 0) {
+            if(this.timer % 5 == 0) {
                 this.timer = 0;
             }
 
         },
 
         draw: function (screen) {
+            screen.fillStyle="red";
             screen.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
         }
 
@@ -126,10 +148,10 @@
     var Wall = function (options) {
         this.game = options.game;
         this.gameSize = this.game.gameSize;
-        this.size = {
-            width:  this.game.block_height * 4,
+        this.size =  {
+            width:  this.game.block_height,
             height: this.game.block_height
-        };
+        },
         this.position = options.position;
 
         this.speedX = options.speedX;
@@ -147,34 +169,11 @@
         },
 
         draw: function (screen) {
+            screen.fillStyle="black";
             screen.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
         }
 
     };
-
-
-    // count - число рядов??
-    var createWalls = function (game, count, speedX) {
-
-        var walls = [];
-        for(var i = 0; i < count; i++) {
-            walls.push( new Wall({
-                game: game,
-                position: {
-                    x: 0,
-                    y: game.gameSize.height - game.block_height * (3 + i*2) 
-                },
-                speedX: i % 2 == 0 ? speedX : - speedX
-            }));
-        }
-
-        return walls;
-    }
-
-
-
-
-
 
     var Keyborder = function () {
 
@@ -200,6 +199,59 @@
         };
 
     };
+
+
+    var load_level = function (game, level) {
+
+        var rows = level.map.length,
+            column  = level.map[0].length,
+            walls = [];
+
+        for( var i = 0; i < rows; i++) {
+            var speedX = level.speed[i];
+
+            for( var j = 0; j < column; j++) {
+                if (  level.map[i][j] && level.map[i][j] !== 0 ) {
+                    walls.push(new Wall({
+                        game: game,
+                        position: {
+                            x: game.block_height * j,
+                            y: game.block_height * i
+                        },
+                        speedX: speedX
+                    }));
+                }
+            }
+        }
+        return walls;
+    };
+
+    var LEVELS =  {
+
+        "level_1":  {
+            "map":  [
+                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                     [1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0],
+                     [0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0],
+                     [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                     [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+                     [0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0],
+                     [0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1],
+                     [1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0],
+                     [0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1],
+                     [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                     [1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1],
+                     [1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                     [1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0],
+                     [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    ],
+                "speed": [ 0, 5, 0, -3, 0, 4, 0, -2, 0, 1, 0, -2, 0, 1, 0]
+        },
+    
+
+    };
+
 
 
 
