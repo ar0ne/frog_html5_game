@@ -9,20 +9,24 @@
         var canvas = document.getElementById('canvas');
         var screen = canvas.getContext('2d');
 
-        this.size = {
+        this.gameSize = {
             width:  canvas.width,
             height: canvas.height
         };
 
         var self = this;
 
+        this.block_height = this.gameSize.height / 15;
+
         this.bodies = [];
 
-        this.addBody(new Player(this, this.size));
+        this.bodies = this.bodies.concat(new Player(this));
+
+        this.bodies = this.bodies.concat(createWalls(this, 6, 3))
 
         var tick = function () {
             self.update();
-            self.draw(screen, self.size);
+            self.draw(screen, self.gameSize);
             requestAnimationFrame(tick);
         };
 
@@ -42,7 +46,7 @@
         draw: function(screen, size) {
             screen.clearRect(0, 0, size.width, size.height);
             for(var i = 0; i < this.bodies.length; i++ ) {
-                drawRect(screen, this.bodies[i]);
+                this.bodies[i].draw(screen);
             }
         },
 
@@ -52,17 +56,17 @@
 
     };
 
-    var Player = function ( screen, gameSize ) {
-        this.screen = screen;
-        this.gameSize = gameSize;
+    var Player = function ( game) {
+        this.game = game;
+        this.gameSize = this.game.gameSize;
         this.size = {
-            width:     this.gameSize.width  / 15,
-            height:    this.gameSize.width  / 15
+            width:     this.game.block_height,
+            height:    this.game.block_height
         };
 
         this.position = {
-            x: this.gameSize.width / 2 ,
-            y: this.gameSize.height / 2 
+            x: this.gameSize.width - this.game.block_height,
+            y: this.gameSize.height - this.game.block_height
         };
 
         this.keyborder = new Keyborder();
@@ -73,7 +77,9 @@
 
     Player.prototype = {
         update: function () {
+
             if( this.timer == 0) {
+
                 if(this.keyborder.isDown(this.keyborder.KEYS.LEFT)) {
                     this.position.x -= this.size.width;
                 } else if(this.keyborder.isDown(this.keyborder.KEYS.RIGHT)) {
@@ -88,20 +94,87 @@
 
             }
 
+            if(this.position.x < 0 ) {
+                 this.position.x = 0
+            }
+            else if(this.position.x > this.gameSize.width - this.size.width) {
+                this.position.x = this.gameSize.width - this.size.width;
+            }
+            if(this.position.y < 0 ) {
+                 this.position.y = 0
+            }
+            else if(this.position.y > this.gameSize.height - this.size.height) {
+                this.position.y = this.gameSize.height - this.size.height;
+            }
+
+
             this.timer++;
 
             if(this.timer % 12 == 0) {
                 this.timer = 0;
             }
 
-
-
         },
+
+        draw: function (screen) {
+            screen.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+        }
+
     };
 
-    var drawRect = function (screen, body) {
-        screen.fillRect(body.position.x, body.position.y, body.size.width, body.size.height);
+
+    var Wall = function (options) {
+        this.game = options.game;
+        this.gameSize = this.game.gameSize;
+        this.size = {
+            width:  this.game.block_height * 4,
+            height: this.game.block_height
+        };
+        this.position = options.position;
+
+        this.speedX = options.speedX;
+
     };
+
+    Wall.prototype = {
+        update: function () {
+            if (this.speedX > 0 && this.position.x > this.game.gameSize.width) {
+                this.position.x = - this.size.width;
+           } else if (this.speedX < 0 && this.position.x < - this.size.width) {
+                this.position.x = this.game.gameSize.width;
+           }
+            this.position.x += this.speedX;
+        },
+
+        draw: function (screen) {
+            screen.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+        }
+
+    };
+
+
+    // count - число рядов??
+    var createWalls = function (game, count, speedX) {
+
+        var walls = [];
+        for(var i = 0; i < count; i++) {
+            walls.push( new Wall({
+                game: game,
+                position: {
+                    x: 0,
+                    y: game.gameSize.height - game.block_height * (3 + i*2) 
+                },
+                speedX: i % 2 == 0 ? speedX : - speedX
+            }));
+        }
+
+        return walls;
+    }
+
+
+
+
+
 
     var Keyborder = function () {
 
