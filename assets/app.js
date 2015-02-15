@@ -7,7 +7,7 @@
 
     var Game = function () {
         var canvas = document.getElementById('canvas');
-        var screen = canvas.getContext('2d');
+        this.screen = canvas.getContext('2d');
 
         var self = this;
 
@@ -20,33 +20,26 @@
 
         this.lives = 0;
 
+        this.level = 1;
+
         this.bodies = [];
 
-        var tick = function () {   
+        this.game_status = false;
+
+        this.game_loop = function () {   
+
+            if(self.isGameOver()) {
+                self.requestId = undefined;
+                self.menu(self.screen);
+                return;
+            }
+
             self.update();
-            self.draw(screen, self.gameSize);
-            requestAnimationFrame(tick);
+            self.draw(self.screen, self.gameSize);
+            self.requestId = requestAnimationFrame(self.game_loop);
         };
 
-        this.menu(screen);
-
-        window.addEventListener("mousedown", doMouseDown, false);
-
-        function doMouseDown(event) {
-
-            var x = event.pageX - canvas.offsetLeft,
-                y = event.pageY - canvas.offsetTop;
-
-                if (x >= self.gameSize.width / 2 - 95  && x <= self.gameSize.width / 2 + 100 &&
-                    y >= self.gameSize.height / 2 - 45 && y <= self.gameSize.height / 2 + 40) {
-
-                    self.bodies = self.bodies.concat(load_level( self, LEVELS.level_1 ));
-
-                    tick();
-                }
-
-            window.removeEventListener("mousedown", doMouseDown, false);
-        }
+        this.menu(this.screen);
 
     };
 
@@ -54,12 +47,16 @@
 
         update: function() {
 
+            if(this.isGameOver()){
+                return;
+            }
+
             for(var i = 0; i < this.bodies.length; i++ ) {
                 this.bodies[i].update();
             }
 
             for(var i = 0; i < this.bodies.length - 1; i++) {
-                for(var j= i+1; j < this.bodies.length; j++ ) {
+                for(var j = i+1; j < this.bodies.length; j++ ) {
 
                     if ( this.bodies[i] instanceof Player || this.bodies[j] instanceof Player ) {
 
@@ -69,9 +66,10 @@
 
                                 if ( this.bodies[i].speedX !== 0 || this.bodies[i].speedY !== 0) {
 
-                                    this.bodies.splice(j, 1);
-                                    this.bodies.splice(i, 1);
-                                  
+                                    this.lives--;
+                                    this.restart_level();
+                                    return;
+
                                 } else {
 
                                     this.bodies[j].position = JSON.parse(JSON.stringify(this.bodies[j].old_position));
@@ -85,8 +83,9 @@
 
                                 if( this.bodies[j].speedX !== 0 || this.bodies[j].speedY !== 0) {
 
-                                    this.bodies.splice(j, 1);
-                                    this.bodies.splice(i, 1);
+                                    this.lives--;
+                                    this.restart_level();
+                                    return;
 
                                 } else {
 
@@ -102,10 +101,15 @@
         },
 
         draw: function(screen, size) {
+
+            if(this.isGameOver()){
+                return;
+            }
+
             screen.clearRect(0, 0, size.width, size.height);
             for(var i = 0; i < this.bodies.length; i++ ) {
                 this.bodies[i].draw(screen);
-            }
+            }            
         },
 
         addBody: function (body) {
@@ -121,8 +125,10 @@
                 b1.position.y  >= b2.position.y + b2.size.height
             );
         },
-        menu: function (screen) {           
-           
+        menu: function (screen) {  
+
+            var self = this;  
+
             screen.font = '50px Monospace';
             // background
             screen.fillStyle = '#56E8BC';
@@ -140,8 +146,79 @@
             screen.fillText('The Frog', this.gameSize.width / 2 - 120, 100);
 
             screen.font = '15px Monospace';
-            screen.fillText('https://github.com/ar0ne/frog_html5_game', 150, this.gameSize.height - 20);  
+            screen.fillText('https://github.com/ar0ne/frog_html5_game', 150, this.gameSize.height - 20); 
 
+
+            window.addEventListener("mousedown", doMouseDown, false);
+
+            function doMouseDown(event) {
+
+                var x = event.pageX - canvas.offsetLeft,
+                    y = event.pageY - canvas.offsetTop;
+
+                if (x >= self.gameSize.width / 2 - 95  && x <= self.gameSize.width / 2 + 100 &&
+                    y >= self.gameSize.height / 2 - 45 && y <= self.gameSize.height / 2 + 40) {
+
+                    window.removeEventListener("mousedown", doMouseDown, false);
+
+                    self.new_game();
+
+                    // only one instance of game_loop must to be
+                    if(!self.requestId) {
+                        self.game_loop();
+                    }
+
+                }
+                
+            } 
+
+        },
+
+        restart_level: function () {
+
+            if(this.isGameOver()){
+                return;
+            }
+
+            this.bodies.splice(0, this.bodies.length);
+
+            this.bodies = this.bodies.concat(load_level( this, LEVELS['level_' + this.level] ));
+        },
+
+        isGameOver: function () {
+            // if lives over and game started
+            if(this.lives === 0 && this.game_status) {
+                console.warn('Game Over');
+                return true;
+            }
+            return false;
+        },
+
+        next_level: function () {
+
+            this.level++;
+
+            this.bodies = this.bodies.concat(load_level(this, LEVELS['level_' + this.level]));
+        },
+
+        game_over: function () {
+
+            this.game_status = false;
+
+            this.bodies.splice(0, this.bodies.length);
+
+            this.menu(this.screen);
+        },
+
+        new_game: function() {
+
+            this.game_status = true;
+           
+            this.lives = 3;
+
+            this.bodies.splice(0, this.bodies.length);
+
+            this.bodies = this.bodies.concat(load_level( this, LEVELS['level_' + this.level] ));
         }
 
     };
@@ -311,6 +388,8 @@
 
     var load_level = function (game, level) {
 
+        console.warn(game.bodies.length);
+
         var rows        = level.map.length,
             columns     = level.map[0].length,
             bodies      = [],
@@ -334,7 +413,10 @@
                     continue;
                 }
 
-                if ( level.map[i][j] === KEYS.WALL_STATIC || level.map[i][j] === KEYS.WALL_MOVE_X || level.map[i][j] === KEYS.WALL_MOVE_Y) {
+                if ( level.map[i][j] === KEYS.WALL_STATIC ||
+                     level.map[i][j] === KEYS.WALL_MOVE_X || 
+                     level.map[i][j] === KEYS.WALL_MOVE_Y) {
+
                     bodies.push( new Wall ({
                         game: game,
                         position: {
