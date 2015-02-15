@@ -60,7 +60,7 @@
 
                     if ( this.bodies[i] instanceof Player || this.bodies[j] instanceof Player ) {
 
-                       if ( this.bodies[i] instanceof Wall ) {
+                        if ( this.bodies[i] instanceof Wall ) {
 
                             if ( this.isCollided(this.bodies[i], this.bodies[j])) {
 
@@ -72,6 +72,7 @@
 
                                 } else {
 
+                                    // if this is static wall, then replace player to old position
                                     this.bodies[j].position = JSON.parse(JSON.stringify(this.bodies[j].old_position));
 
                                 }
@@ -93,6 +94,14 @@
 
                                 }
                             }
+                        } 
+
+                        if (this.bodies[i] instanceof Exit || this.bodies[j] instanceof Exit) {
+                            if ( this.isCollided(this.bodies[i], this.bodies[j])) {
+
+                                this.next_level();
+                            }
+
                         }
                     }
                 }
@@ -197,6 +206,8 @@
         next_level: function () {
 
             this.level++;
+
+            this.bodies.splice(0, this.bodies.length);
 
             this.bodies = this.bodies.concat(load_level(this, LEVELS['level_' + this.level]));
         },
@@ -306,7 +317,6 @@
         this.speedX = options.speedX;
         this.speedY = options.speedY;
 
-
         this.timer = 0;
 
 
@@ -360,6 +370,29 @@
 
     };
 
+    var Exit = function (options) {
+        this.game = options.game;
+        this.gameSize = this.game.gameSize;
+        this.size =  {
+            width:  this.game.block_height,
+            height: this.game.block_height
+        },
+        this.position = options.position;
+
+    };
+
+    Exit.prototype = {
+        draw: function(screen){
+            screen.fillStyle="yellow";
+            screen.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+        },
+
+        update: function() {
+
+        }
+    }
+
+
     var Keyborder = function () {
 
         var keyState = {};
@@ -387,8 +420,6 @@
 
 
     var load_level = function (game, level) {
-
-        console.warn(game.bodies.length);
 
         var rows        = level.map.length,
             columns     = level.map[0].length,
@@ -429,11 +460,10 @@
 
                     }));
 
-                } else if(level.map[i][j] === KEYS.PLAYER){
+                } else if(level.map[i][j] === KEYS.PLAYER) {
 
                     bodies.push( new Player ({
                         game: game,
-
                         position: {
                             x: game.block_height * j,
                             y: game.block_height * i
@@ -441,8 +471,15 @@
 
                     }));
 
-                } else {
-                    // exit from level
+                } else if(level.map[i][j] === KEYS.EXIT) {
+
+                    bodies.push( new Exit({
+                        game: game,
+                        position: {
+                            x: game.block_height * j,
+                            y: game.block_height * i
+                        }
+                    }));
                 }
             }
         }
@@ -468,7 +505,7 @@
                     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],   // 3
                     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],   // 4
                     [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 5
-                    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 6
+                    [1, 1, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 6
                     [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 7
                     [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 8
                     [1, 1, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 9
@@ -483,7 +520,7 @@
                 //          1  2  3  4  5  6  7  8  9  10  11  12  13  14  15
 
                 "speedY": [ 0, 0, 0, 0, 0, 0, 0, 0, -2,  0,  0,  0,  0,  0,  0],
-                //          1  2  3  4  5  6  7  8  9  10  11  12  13  14  15
+                //          1  2  3  4  5  6  7  8   9  10  11  12  13  14  15
        },
 
        "level_2":  {
@@ -502,9 +539,13 @@
                     [1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
                     [1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0],
                     [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0],
                    ],
-               "speedX": [ 0, 5, 0, -3, 0, 4, 0, -2, 0, 1, 0, -2, 0, 1, 0]
+               "speedX": [ 0, 5, 0, -3, 0, 4, 0, -2, 0, 1, 0, -2, 0, 1, 0],
+               //          1  2  3  4  5  6  7  8  9  10  11  12  13  14  15
+
+               "speedY": [ 0, 0, 0, 0, 0, 0, 0, 0, -2,  0,  0,  0,  0,  0,  0],
+               //          1  2  3  4  5  6  7  8   9  10  11  12  13  14  15
        },
 
 
