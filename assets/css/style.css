@@ -1,0 +1,8 @@
+body {
+    background: black;
+}
+canvas {
+    background: white;
+    display: block;
+    margin: 30px auto 0px;
+}

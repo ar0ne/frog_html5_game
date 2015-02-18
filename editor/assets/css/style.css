@@ -1,0 +1,64 @@
+table {
+	width: 640px;
+	height: 480px;
+}
+
+tr {
+	width: 32px;
+	height: 32px;
+}
+
+td { 
+	border: 1px black solid;
+	background: grey;
+}
+
+.left, .right {
+	width: 50%;
+}
+
+.left {
+	float: left;
+}
+
+.right {
+	float: right;
+}
+
+#tiled_container div { 
+	width: 300px;
+	height: 32px;
+	border: 1px solid black;
+	text-align: center;
+	display: table-cell;
+	vertical-align: middle;
+}
+
+.empty {
+	background: gold;
+}
+
+.static {
+	background: #920fc8;
+}
+
+.move_x {
+	background-image: url(assets/img/left_right.png);
+	background-color: #912c2c;
+}
+
+.move_y {
+	background: #b71818;
+}
+
+.player {
+	background: #39ab3c;
+}
+
+.exit {
+	background: #e5e33f;
+}
+
+.selected {
+	color: white;
+}
