@@ -1,64 +1,92 @@
+html, body {
+    -moz-user-select: none;
+    -khtml-user-select: none;   /* old Safari, old Chrome */
+    -webkit-user-select: none;  /* new Safari, new Chrome */
+    -ms-user-select:none;       /* IE 9-10 */
+    user-select: none;          /* all css3 */
+}
 table {
-	width: 640px;
-	height: 480px;
+    width: 640px;
+    height: 480px;
 }
 
-tr {
-	width: 32px;
-	height: 32px;
+#map tr , #map input {
+    width:  16px;
+    height: 16px;
+}
+
+#map tr input {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: none;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+    text-align: center;
 }
 
 td { 
-	border: 1px black solid;
-	background: grey;
+    border: 1px black solid;
+    background: grey;
 }
 
 .left, .right {
-	width: 50%;
+    width: 50%;
 }
 
 .left {
-	float: left;
+    float: left;
 }
 
 .right {
-	float: right;
+    float: right;
 }
 
 #tiled_container div { 
-	width: 300px;
-	height: 32px;
-	border: 1px solid black;
-	text-align: center;
-	display: table-cell;
-	vertical-align: middle;
+    width: 300px;
+    height: 32px;
+    border: 1px solid black;
+    text-align: center;
+    display: table-cell;
+    vertical-align: middle;
 }
 
 .empty {
-	background: gold;
+    background: grey;
 }
 
 .static {
-	background: #920fc8;
+    background: #920fc8;
 }
 
 .move_x {
-	background-image: url(assets/img/left_right.png);
-	background-color: #912c2c;
+    background-image: url(assets/img/left_right.png);
+    background-color: #912c2c;
 }
 
 .move_y {
-	background: #b71818;
+    background: #bf1210;
 }
 
 .player {
-	background: #39ab3c;
+    background: #39ab3c;
 }
 
 .exit {
-	background: #e5e33f;
+    background: #e5e33f;
 }
 
 .selected {
-	color: white;
+    color: white;
+}
+
+#button_export {
+
+}
+
+#inputFileNameToSaveAs {
+    width: 15em;
+    height: 2em;
 }

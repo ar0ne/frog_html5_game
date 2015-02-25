@@ -15,7 +15,7 @@
 
 			<div class="right">
 				<div id="tiled_container"> 
-					<div class="empty"  id="button_empty">
+					<div class="empty selected"  id="button_empty">
 						<p>Empty field</p>
 					</div>
 					<div class="static" id="button_static">
@@ -34,6 +34,17 @@
 						<p>Exit field</p>
 					</div>
 				</div>
+				<br />
+				<button id="button_erase">Clear map</button>
+				<button id="button_export">Export map</button>
+				<br />
+				<br />
+				<p>Filename to Save As:</p>
+				<input id="inputFileNameToSaveAs"></input>
+				<p>Select a File to Load:</p>
+				<input type="file" id="fileToLoad">
+				<button id="button_load">Load Selected File</button>
+
 			</div>
 
 		</div>
