@@ -178,14 +178,11 @@
 					speed_x.push( $(speeds.get(i) ).val() ? $( speeds.get(i) ).val() : 0 );
 				}
 			}
-						
 
 			json.speed_x = speed_x;
 			json.speed_y = speed_y;
 
-
 			return JSON.stringify(json);
-
 		},
 
 		clearMap: function () {
@@ -196,21 +193,26 @@
 		},
 
 		saveTextAsFile: function(size) {
+
 			var textToWrite = this.export(size);
 			var textFileAsBlob = new Blob([textToWrite], {type:'text/plain'});
 			var fileNameToSaveAs = $("#inputFileNameToSaveAs").val();
 
+			// if user input type of file (like *.txt) cut this and add "json"
+			if(fileNameToSaveAs.indexOf(".") + 1) {
+				fileNameToSaveAs = fileNameToSaveAs.split('.')[0];
+			}
+
+			fileNameToSaveAs += ".json";
+
 			var downloadLink = document.createElement("a");
 			downloadLink.download = fileNameToSaveAs;
 			downloadLink.innerHTML = "Download File";
-			if (window.webkitURL != null)
-			{
+			if (window.webkitURL != null) {
 				// Chrome allows the link to be clicked
 				// without actually adding it to the DOM.
 				downloadLink.href = window.webkitURL.createObjectURL(textFileAsBlob);
-			}
-			else
-			{
+			} else {
 				// Firefox requires the link to be added to the DOM
 				// before it can be clicked.
 				downloadLink.href = window.URL.createObjectURL(textFileAsBlob);
@@ -229,15 +231,68 @@
 
 		// @TODO: load JSON from file
 		loadFileAsText: function () {
+			var self = this;
 			var fileToLoad = document.getElementById("fileToLoad").files[0];
 
 			var fileReader = new FileReader();
-			fileReader.onload = function(fileLoadedEvent) 
-			{
+			fileReader.onload = function(fileLoadedEvent) {
+
 				var textFromFileLoaded = fileLoadedEvent.target.result;
-				document.getElementById("inputTextToSave").value = textFromFileLoaded;
+
+				var json = JSON.parse(textFromFileLoaded);
+
+				self.import(json);
+
 			};
+
 			fileReader.readAsText(fileToLoad, "UTF-8");
+		},
+
+		import: function (level) {
+
+			this.clearMap();
+
+			var map 		= $("#map td:not(.speeds)"),
+				speeds 		= $("td.speeds input"),
+				rows        = level.map.length,
+			    columns     = level.map[0].length;
+
+			for(var i = 0; i < rows; i++ ) {
+				for(var j = 0; j < columns; j++ ) {
+
+					switch( level.map[i][j] ) {
+						case 0:
+							$( map.get(i * columns + j)).addClass("empty");
+							break;
+						case 1:
+							$( map.get(i * columns + j)).addClass("static");
+							break;
+						case 2:
+							$( map.get(i * columns + j)).addClass("move_x");
+							break;
+						case 3:
+							$( map.get(i * columns + j)).addClass("move_y");
+							break;
+						case 4:
+							$( map.get(i * columns + j)).addClass("player");
+							break;
+						case 5:
+							$( map.get(i * columns + j)).addClass("exit");
+							break;
+						default:
+							console.log("Error: Not recognized type of wall: " +  level.map[i][j]);
+					}
+				}
+			}
+
+			for(var i = 0; i < level.speed_y.length; i++) {
+				$( speeds.get(i) ).val( level.speed_y[i] != 0 ? level.speed_y[i] : "" );
+			}
+
+			for(var i = 0; i < level.speed_x.length ; i++) {
+				$( speeds.get(i + level.speed_y.length) ).val ( level.speed_x[i] != 0 ? level.speed_x[i] : "" );
+			}
+
 		}
 	};
 
