@@ -20,6 +20,8 @@
 
         this.lives = 0;
 
+        this.start_livecount = 3;
+
         this.level = 1;
 
         this.bodies = [];
@@ -31,8 +33,9 @@
         this.game_loop = function () {   
 
             if(self.isGameOver()) {
+                console.log('Game Over');
                 self.requestId = undefined;
-                self.menu(self.screen);
+                self.game_over();
                 return;
             }
 
@@ -42,7 +45,7 @@
             self.requestId = requestAnimationFrame(self.game_loop);
         };
 
-        this.menu(this.screen);
+        this.menu();
 
     };
 
@@ -146,9 +149,11 @@
             );
         },
 
-        menu: function (screen) {  
+        menu: function () {  
 
-            var self = this;  
+            var self = this; 
+
+            var screen = this.screen; 
 
             screen.font = '50px Monospace';
             // background
@@ -209,7 +214,6 @@
         isGameOver: function () {
             // if lives over and game started
             if(this.lives === 0 && this.game_status) {
-                console.warn('Game Over');
                 return true;
             }
             return false;
@@ -230,14 +234,48 @@
 
             this.bodies.splice(0, this.bodies.length);
 
-            this.menu(this.screen);
+            var self = this;
+            var screen = this.screen;
+
+            screen.font = '50px Monospace';
+            // background
+            screen.fillStyle = '#990000';
+            screen.fillRect(0, 0, this.gameSize.width, this.gameSize.height);
+
+            // add button restart
+            screen.fillStyle = "#C43963";
+            screen.fillRect(this.gameSize.width / 2 - 95, this.gameSize.height / 2 - 45, 200, 100);
+            screen.fillStyle = "#E85682";
+            screen.fillRect(this.gameSize.width / 2 - 100, this.gameSize.height / 2 - 50, 200, 100);
+
+            screen.fillStyle = 'white';
+            screen.fillText('Game Over', this.gameSize.width / 2 - 140, this.gameSize.height / 4);
+            screen.font = '30px Monospace';
+            screen.fillText('Try Again', this.gameSize.width / 2 - 80, this.gameSize.height / 2 + 5);
+
+            window.addEventListener("mousedown", doMouseDown, false);
+
+            function doMouseDown(event) {
+
+                var x = event.pageX - canvas.offsetLeft,
+                    y = event.pageY - canvas.offsetTop;
+
+                if (x >= self.gameSize.width / 2 - 95  && x <= self.gameSize.width / 2 + 100 &&
+                    y >= self.gameSize.height / 2 - 45 && y <= self.gameSize.height / 2 + 40) {
+
+                    window.removeEventListener("mousedown", doMouseDown, false);
+
+                    self.menu();
+                }
+            }
+
         },
 
         new_game: function() {
 
             this.game_status = true;
            
-            this.lives = 3;
+            this.lives = this.start_livecount;
 
             this.bodies.splice(0, this.bodies.length);
 
@@ -265,11 +303,12 @@
                     EXIT:           5
                 };
 
-            for( var i = 0; i < rows; i++) {
-                var speedX = parseInt(level.speedX[i]),
-                    speedY = parseInt(level.speedY[i]);
+            for(var i = 0; i < rows; i++) {
+                 var speedY = parseInt(level.speedY[i]);
 
-                for( var j = 0; j < columns; j++) {
+                for(var j = 0; j < columns; j++) {
+                    var speedX = parseInt(level.speedX[j]);
+                   
 
                     // empty fields
                     if (level.map[i][j] === KEYS.EMPTY) {
@@ -280,17 +319,33 @@
                         level.map[i][j] === KEYS.WALL_MOVE_X ||
                         level.map[i][j] === KEYS.WALL_MOVE_Y) {
 
-                        bodies.push( new Wall ({
-                            game: this,
-                            position: {
-                                x: this.block_height * j,
-                                y: this.block_height * i
-                            },
-                            // if field is dynamic than it have speed
-                            speedX: (level.map[i][j] === KEYS.WALL_MOVE_X ? speedX : 0),
-                            speedY: (level.map[i][j] === KEYS.WALL_MOVE_Y ? speedY : 0)
+                        var spX = (level.map[i][j] === KEYS.WALL_MOVE_X ? speedX : 0);
+                        var spY = (level.map[i][j] === KEYS.WALL_MOVE_Y ? speedY : 0);
 
-                        }));
+                        if (speedX === 0 && speedY === 0) {  // static walls
+                            // add in begin of array, because move-walls must to be at top of it
+                            bodies.unshift( new Wall ({
+                                game: this,
+                                position: {
+                                    x: this.block_height * j,
+                                    y: this.block_height * i
+                                },
+                                speedX: spX,
+                                speedY: spY
+                            }));
+
+                        } else {
+
+                             bodies.push( new Wall ({
+                                game: this,
+                                position: {
+                                    x: this.block_height * j,
+                                    y: this.block_height * i
+                                },
+                                speedX: spX,
+                                speedY: spY
+                            }));
+                        }
 
                     } else if(level.map[i][j] === KEYS.PLAYER) {
 
@@ -315,8 +370,8 @@
                     }
                 }
             }
+            
             return bodies;
-
         }
 
     };
@@ -438,7 +493,7 @@
         draw: function (screen) {
             if (this.speedX) {
                 screen.fillStyle="grey";
-            }else if(this.speedY) {
+            } else if(this.speedY) {
                 screen.fillStyle="blue";
             } else {
                 screen.fillStyle="black";

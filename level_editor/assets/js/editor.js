@@ -110,9 +110,15 @@
 		})
 
 		$("#button_load").on('click', function() {
-			self.loadFileAsText();
+			if ($("#file_to_load").val()) {
+				self.loadFileAsText();
+			} else if($("#json_to_load").val()) {
+				self.import(JSON.parse($("#json_to_load").val()));
+			} else {
+				alert("Can't load map!");
+			}
+			
 		})
-
 
 	};
 
@@ -130,10 +136,11 @@
 		export: function(size) {
 			var map = $("#map td:not(.speeds)"),
 
-				json = { map: [],
-				 		 speedX: [],
-				 		 speedY: [],
-				 		};
+				json = { 
+					map: 	[],
+				 	speedX: [],
+				 	speedY: [],
+		 		};
 
 			for(var i = 0; i < size.height; i++ ) {
 				var row = [];
@@ -172,10 +179,11 @@
 				speeds = $("td.speeds input");
 
 			for(var i = 0; i < speeds.length; i++) {
+				var value = $(speeds.get(i) ).val() ? $( speeds.get(i) ).val() : 0 ;
 				if(i < size.height) {
-					speedY.push( $(speeds.get(i) ).val() ? $( speeds.get(i) ).val() : 0 );
+					speedY.push( parseInt(value) );
 				} else {
-					speedX.push( $(speeds.get(i) ).val() ? $( speeds.get(i) ).val() : 0 );
+					speedX.push( parseInt(value) );
 				}
 			}
 
@@ -188,7 +196,8 @@
 		clearMap: function () {
 			$("#map td:not(.speeds)").removeClass().addClass("empty");
 			$("td.speeds input").each(function(){
-				$(this).val('');
+				$(this).val('')					
+					.removeClass(); // erase old classes
 			})
 		},
 
@@ -196,7 +205,7 @@
 
 			var textToWrite = this.export(size);
 			var textFileAsBlob = new Blob([textToWrite], {type:'text/plain'});
-			var fileNameToSaveAs = $("#inputFileNameToSaveAs").val();
+			var fileNameToSaveAs = $("#input_file_name_to_save_as").val();
 
 			// if user input type of file (like *.txt) cut this and add "json"
 			if(fileNameToSaveAs.indexOf(".") + 1) {
@@ -229,12 +238,12 @@
 
 		}, 
 
-		// @TODO: load JSON from file
 		loadFileAsText: function () {
 			var self = this;
-			var fileToLoad = document.getElementById("fileToLoad").files[0];
+			var file_to_load = document.getElementById("file_to_load").files[0];
 
 			var fileReader = new FileReader();
+
 			fileReader.onload = function(fileLoadedEvent) {
 
 				var textFromFileLoaded = fileLoadedEvent.target.result;
@@ -245,12 +254,14 @@
 
 			};
 
-			fileReader.readAsText(fileToLoad, "UTF-8");
+			fileReader.readAsText(file_to_load, "UTF-8");
 		},
 
 		import: function (level) {
 
 			this.clearMap();
+
+			$("#file_to_load").val('');
 
 			var map 		= $("#map td:not(.speeds)"),
 				speeds 		= $("td.speeds input"),

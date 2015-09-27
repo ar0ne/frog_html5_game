@@ -86,7 +86,12 @@ td {
 
 }
 
-#inputFileNameToSaveAs {
+#input_file_name_to_save_as {
     width: 15em;
     height: 2em;
+}
+
+#json_to_load {
+    min-width: 50em;
+    min-height: 20em;
 }
