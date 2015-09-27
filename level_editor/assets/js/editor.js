@@ -3,8 +3,8 @@
 
 	window.addEventListener('load', function () {
 	    new Editor({
-	    	width: 15, 
-	    	height: 20
+	    	width: 20, 
+	    	height: 15
 	    });
 	});
 
@@ -131,8 +131,8 @@
 			var map = $("#map td:not(.speeds)"),
 
 				json = { map: [],
-				 		 speed_x: [],
-				 		 speed_y: [],
+				 		 speedX: [],
+				 		 speedY: [],
 				 		};
 
 			for(var i = 0; i < size.height; i++ ) {
@@ -166,21 +166,21 @@
 				json.map.push(row);
 			}
 
-			// speed_y
-			var speed_y = [],
-				speed_x = [],
+			// speedY
+			var speedY = [],
+				speedX = [],
 				speeds = $("td.speeds input");
 
 			for(var i = 0; i < speeds.length; i++) {
 				if(i < size.height) {
-					speed_y.push( $(speeds.get(i) ).val() ? $( speeds.get(i) ).val() : 0 );
+					speedY.push( $(speeds.get(i) ).val() ? $( speeds.get(i) ).val() : 0 );
 				} else {
-					speed_x.push( $(speeds.get(i) ).val() ? $( speeds.get(i) ).val() : 0 );
+					speedX.push( $(speeds.get(i) ).val() ? $( speeds.get(i) ).val() : 0 );
 				}
 			}
 
-			json.speed_x = speed_x;
-			json.speed_y = speed_y;
+			json.speedX = speedX;
+			json.speedY = speedY;
 
 			return JSON.stringify(json);
 		},
@@ -285,12 +285,12 @@
 				}
 			}
 
-			for(var i = 0; i < level.speed_y.length; i++) {
-				$( speeds.get(i) ).val( level.speed_y[i] != 0 ? level.speed_y[i] : "" );
+			for(var i = 0; i < level.speedY.length; i++) {
+				$( speeds.get(i) ).val( level.speedY[i] != 0 ? level.speedY[i] : "" );
 			}
 
-			for(var i = 0; i < level.speed_x.length ; i++) {
-				$( speeds.get(i + level.speed_y.length) ).val ( level.speed_x[i] != 0 ? level.speed_x[i] : "" );
+			for(var i = 0; i < level.speedX.length ; i++) {
+				$( speeds.get(i + level.speedY.length) ).val ( level.speedX[i] != 0 ? level.speedX[i] : "" );
 			}
 
 		}

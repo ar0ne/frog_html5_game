@@ -26,6 +26,8 @@
 
         this.game_status = false;
 
+        this.keyborder = new Keyborder();
+
         this.game_loop = function () {   
 
             if(self.isGameOver()) {
@@ -36,6 +38,7 @@
 
             self.update();
             self.draw(self.screen, self.gameSize);
+            self.show_lives(self.screen);
             self.requestId = requestAnimationFrame(self.game_loop);
         };
 
@@ -103,6 +106,14 @@
                             }
 
                         }
+
+                        // block connection of few players
+                        if(this.bodies[i] instanceof Player && this.bodies[j] instanceof Player) {
+                            if ( this.isCollided(this.bodies[i], this.bodies[j])) {
+                                this.bodies[i].position = JSON.parse(JSON.stringify(this.bodies[i].old_position));
+                                this.bodies[j].position = JSON.parse(JSON.stringify(this.bodies[j].old_position));
+                            }
+                        }
                     }
                 }
             }
@@ -134,6 +145,7 @@
                 b1.position.y  >= b2.position.y + b2.size.height
             );
         },
+
         menu: function (screen) {  
 
             var self = this;  
@@ -191,7 +203,7 @@
 
             this.bodies.splice(0, this.bodies.length);
 
-            this.bodies = this.bodies.concat(load_level( this, LEVELS['level_' + this.level] ));
+            this.bodies = this.bodies.concat(this.load_level(LEVELS[this.level] ));
         },
 
         isGameOver: function () {
@@ -209,7 +221,7 @@
 
             this.bodies.splice(0, this.bodies.length);
 
-            this.bodies = this.bodies.concat(load_level(this, LEVELS['level_' + this.level]));
+            this.bodies = this.bodies.concat(this.load_level(LEVELS[this.level]));
         },
 
         game_over: function () {
@@ -229,7 +241,82 @@
 
             this.bodies.splice(0, this.bodies.length);
 
-            this.bodies = this.bodies.concat(load_level( this, LEVELS['level_' + this.level] ));
+            this.bodies = this.bodies.concat(this.load_level(LEVELS[this.level] ));
+        },
+
+        show_lives: function(screen) {
+
+            screen.fillStyle = 'pink';
+            screen.fillText('Lives: ' + this.lives, this.gameSize.width - 100, 20);
+
+        },
+
+        load_level: function (level) {
+
+            var rows        = level.map.length,
+                columns     = level.map[0].length,
+                bodies      = [],
+                KEYS        = {
+                    EMPTY:          0,
+                    WALL_STATIC:    1,
+                    WALL_MOVE_X:    2,
+                    WALL_MOVE_Y:    3,
+                    PLAYER:         4,
+                    EXIT:           5
+                };
+
+            for( var i = 0; i < rows; i++) {
+                var speedX = parseInt(level.speedX[i]),
+                    speedY = parseInt(level.speedY[i]);
+
+                for( var j = 0; j < columns; j++) {
+
+                    // empty fields
+                    if (level.map[i][j] === KEYS.EMPTY) {
+                        continue;
+                    }
+
+                    if (level.map[i][j] === KEYS.WALL_STATIC ||
+                        level.map[i][j] === KEYS.WALL_MOVE_X ||
+                        level.map[i][j] === KEYS.WALL_MOVE_Y) {
+
+                        bodies.push( new Wall ({
+                            game: this,
+                            position: {
+                                x: this.block_height * j,
+                                y: this.block_height * i
+                            },
+                            // if field is dynamic than it have speed
+                            speedX: (level.map[i][j] === KEYS.WALL_MOVE_X ? speedX : 0),
+                            speedY: (level.map[i][j] === KEYS.WALL_MOVE_Y ? speedY : 0)
+
+                        }));
+
+                    } else if(level.map[i][j] === KEYS.PLAYER) {
+
+                        bodies.push( new Player ({
+                            game: this,
+                            position: {
+                                x: this.block_height * j,
+                                y: this.block_height * i
+                            }
+
+                        }));
+
+                    } else if(level.map[i][j] === KEYS.EXIT) {
+
+                        bodies.push( new Exit({
+                            game: this,
+                            position: {
+                                x: this.block_height * j,
+                                y: this.block_height * i
+                            }
+                        }));
+                    }
+                }
+            }
+            return bodies;
+
         }
 
     };
@@ -245,7 +332,7 @@
 
         this.position = options.position;
 
-        this.keyborder = new Keyborder();
+        this.keyborder = options.game.keyborder;
 
         this.old_position = {};
 
@@ -276,14 +363,13 @@
 
             if(this.position.x < 0 ) {
                  this.position.x = 0
-            }
-            else if(this.position.x > this.gameSize.width - this.size.width) {
+            } else if(this.position.x > this.gameSize.width - this.size.width) {
                 this.position.x = this.gameSize.width - this.size.width;
             }
+
             if(this.position.y < 0 ) {
                  this.position.y = 0
-            }
-            else if(this.position.y > this.gameSize.height - this.size.height) {
+            } else if(this.position.y > this.gameSize.height - this.size.height) {
                 this.position.y = this.gameSize.height - this.size.height;
             }
 
@@ -311,14 +397,12 @@
         this.size =  {
             width:  this.game.block_height,
             height: this.game.block_height
-        },
+        };
+
         this.position = options.position;
 
         this.speedX = options.speedX;
         this.speedY = options.speedY;
-
-        this.timer = 0;
-
 
     };
 
@@ -329,42 +413,37 @@
                 return;
             }
 
+            if(this.speedX) {
+                this.position.x += this.speedX;
+            }
+
+            if(this.speedY) {
+                this.position.y += this.speedY;
+            }
+
             if (this.speedX > 0 && this.position.x > this.game.gameSize.width) {
                 this.position.x = 0 - this.size.width;
             } else if (this.speedX < 0 && this.position.x < - this.size.width) {
                 this.position.x = this.game.gameSize.width;
             }
 
-            if (this.speedY > 0 && this.position.y < 0) {
-                this.position.y = this.game.gameSize.height;
-            } else if (this.speedY < 0 && this.position.y > this.gameSize.height) {
-                this.position.y = - this.size.height;
-            }
-
-
-            this.timer++;
-
-            if(this.timer % 23 == 0) {
-
-                this.timer = 0;
-
-                if(this.speedX > 0) {
-                    this.position.x +=   this.game.block_height;
-                } else if (this.speedX < 0) {
-                    this.position.x += - this.game.block_height;
-                }
-
-                if(this.speedY > 0) {
-                    this.position.y += - this.game.block_height;
-                } else if (this.speedY < 0) {
-                    this.position.y +=   this.game.block_height;
-                }
+            if (this.speedY > 0 && this.position.y > this.gameSize.height ) {
+                this.position.y = 0 - this.size.height;
+            } else if (this.speedY < 0 && this.position.y < - this.size.height) {
+                this.position.y = this.size.height + this.game.gameSize.height
             }
 
         },
 
         draw: function (screen) {
-            screen.fillStyle="black";
+            if (this.speedX) {
+                screen.fillStyle="grey";
+            }else if(this.speedY) {
+                screen.fillStyle="blue";
+            } else {
+                screen.fillStyle="black";
+            }
+            
             screen.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
         }
 
@@ -376,7 +455,8 @@
         this.size =  {
             width:  this.game.block_height,
             height: this.game.block_height
-        },
+        };
+
         this.position = options.position;
 
     };
@@ -387,10 +467,8 @@
             screen.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
         },
 
-        update: function() {
-
-        }
-    }
+        update: function() {}
+    };
 
 
     var Keyborder = function () {
@@ -413,146 +491,10 @@
             LEFT:   37,
             RIGHT:  39,
             UP:     40,
-            DOWN:   38,
+            DOWN:   38
         };
 
     };
-
-
-    var load_level = function (game, level) {
-
-        var rows        = level.map.length,
-            columns     = level.map[0].length,
-            bodies      = [],
-            KEYS        = {
-                EMPTY:          0,
-                WALL_STATIC:    1,
-                WALL_MOVE_X:    2,
-                WALL_MOVE_Y:    3,
-                PLAYER:         4,
-                EXIT:           5
-            };
-
-        for( var i = 0; i < rows; i++) {
-            var speedX = level.speedX[i],
-                speedY = level.speedY[i];
-
-            for( var j = 0; j < columns; j++) {
-
-                // empty fields
-                if (level.map[i][j] === KEYS.EMPTY) {
-                    continue;
-                }
-
-                if ( level.map[i][j] === KEYS.WALL_STATIC ||
-                     level.map[i][j] === KEYS.WALL_MOVE_X || 
-                     level.map[i][j] === KEYS.WALL_MOVE_Y) {
-
-                    bodies.push( new Wall ({
-                        game: game,
-                        position: {
-                            x: game.block_height * j,
-                            y: game.block_height * i
-                        },
-                        // if field is dynamic than it have speed
-                        speedX: (level.map[i][j] === KEYS.WALL_MOVE_X ? speedX : 0),
-                        speedY: (level.map[i][j] === KEYS.WALL_MOVE_Y ? speedY : 0),
-
-                    }));
-
-                } else if(level.map[i][j] === KEYS.PLAYER) {
-
-                    bodies.push( new Player ({
-                        game: game,
-                        position: {
-                            x: game.block_height * j,
-                            y: game.block_height * i
-                        }
-
-                    }));
-
-                } else if(level.map[i][j] === KEYS.EXIT) {
-
-                    bodies.push( new Exit({
-                        game: game,
-                        position: {
-                            x: game.block_height * j,
-                            y: game.block_height * i
-                        }
-                    }));
-                }
-            }
-        }
-        return bodies;
-    };
-
-
-    /**
-     *  map size 15 x 20
-     *  0 - empty field
-     *  1 - wall static
-     *  2 - wall dynamic by axis X
-     *  3 - wall dynamic by axis Y
-     *  4 - player
-     *  5 - exit
-    **/
-    var LEVELS =  {
-
-       "level_1":  {
-           "map":  [
-                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],   // 1
-                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],   // 2
-                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],   // 3
-                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],   // 4
-                    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 5
-                    [1, 1, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 6
-                    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 7
-                    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 8
-                    [1, 1, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 9
-                    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 10
-                    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 11
-                    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 12
-                    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 13
-                    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],   // 14
-                    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 1],   // 15
-                   ],
-                "speedX": [ 0, 0, 0, 0, 0, 0, 0, 0, 2,  0,  0,  0,  0,  0,  0],
-                //          1  2  3  4  5  6  7  8  9  10  11  12  13  14  15
-
-                "speedY": [ 0, 0, 0, 0, 0, 0, 0, 0, -2,  0,  0,  0,  0,  0,  0],
-                //          1  2  3  4  5  6  7  8   9  10  11  12  13  14  15
-       },
-
-       "level_2":  {
-           "map":  [
-                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    [1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0],
-                    [0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0],
-                    [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0],
-                    [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
-                    [0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0],
-                    [0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1],
-                    [1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0],
-                    [0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1],
-                    [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
-                    [1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1],
-                    [1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
-                    [1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0],
-                    [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0],
-                   ],
-               "speedX": [ 0, 5, 0, -3, 0, 4, 0, -2, 0, 1, 0, -2, 0,  1, 0],
-               //          1  2  3   4  5  6  7   8  9 10  11 12  13 14  15
-
-               "speedY": [ 0, 0, 0, 0, 0, 0, 0, 0, -2,  0,  0,  0,  0,  0,  0],
-               //          1  2  3  4  5  6  7  8   9  10  11  12  13  14  15
-       },
-
-
-
-   };
-
-
 
 
 })();
